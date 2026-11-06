@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit timetable | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <div class="staff-badge"><span>{{ user.role|capitalize }} workspace</span><strong>{{ user.uucms_id }}</strong></div>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content staff-content timetable-editor-content">
+        <p class="eyebrow">{{ user.role|capitalize }} module</p>
+        <h1>Edit timetables.</h1>
+        <p class="dashboard-lede">Admins can choose a department and semester to update. Student dashboards will use their department's timetable.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="timetable-controls">
+            <form class="timetable-options-form" method="get" action="{{ url_for('manage_timetable') }}">
+                {% if user.role == 'admin' %}
+                <label for="timetable-department">Department</label>
+                <select id="timetable-department" name="department" onchange="this.form.submit()">
+                    {% for department in departments %}<option value="{{ department }}" {% if department == selected_department %}selected{% endif %}>{{ department }}</option>{% endfor %}
+                </select>
+                {% else %}
+                <span class="timetable-department-label"><strong>Department:</strong> {{ selected_department }}</span>
+                {% endif %}
+                <label for="timetable-semester">Semester</label>
+                <select id="timetable-semester" name="semester" onchange="this.form.submit()">
+                    {% for semester in semesters %}<option value="{{ semester }}" {% if semester == selected_semester %}selected{% endif %}>{{ semester }}</option>{% endfor %}
+                </select>
+                <noscript><button class="save-button" type="submit">Choose timetable</button></noscript>
+            </form>
+            <form class="timetable-delete-form" method="post" onsubmit="return confirm('Delete the {{ selected_department }} {{ selected_semester }} timetable?');">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="department" value="{{ selected_department }}">
+                <input type="hidden" name="semester" value="{{ selected_semester }}">
+                <button class="delete-button" type="submit">Delete timetable</button>
+            </form>
+        </div>
+
+        <form method="post" class="panel timetable-editor-form" onsubmit="return confirm('Are you sure you want to save these timetable changes?');">
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="department" value="{{ selected_department }}">
+            <input type="hidden" name="semester" value="{{ selected_semester }}">
+            <div class="panel-heading"><div><p class="eyebrow">{{ selected_department }} · {{ selected_semester }}</p><h2>Weekly schedule</h2></div><button class="save-button timetable-save-button" type="submit">Save timetable</button></div>
+            <p class="editor-note">The 10:00–10:30 break is fixed. Edit the six teaching periods for each day.</p>
+            <div class="timetable-scroll">
+                <table class="timetable-editor-table">
+                    <thead><tr><th>Day</th>{% for label in period_labels %}<th>{{ label }}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                        {% for day in days %}
+                        <tr>
+                            <th>{{ day }}</th>
+                            {% for period in ['period_1', 'period_2', 'period_3', 'period_4', 'period_6', 'period_7'] %}
+                            <td><input name="{{ day }}_{{ period }}" value="{{ timetable.get(day, ['', '', '', '', '', ''])[loop.index0] }}" aria-label="{{ day }} {{ period }}"></td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
+        <p class="switch-copy"><a href="{{ url_for('manage_students') }}">Back to student records</a></p>
+    </main>
+</body>
+</html>

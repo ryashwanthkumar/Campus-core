@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage students | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        {% if user.role == 'admin' %}<a class="mailbox-link" href="{{ url_for('mailbox') }}" aria-label="Open mailbox">✉{% if pending_teachers %}<b>{{ pending_teachers|length }}</b>{% endif %}</a>{% endif %}
+        <div class="staff-badge"><span>{{ user.role|capitalize }} workspace</span><strong>{{ user.uucms_id }}</strong></div>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content staff-content">
+        <p class="eyebrow">{{ user.role|capitalize }} module</p>
+        <h1>Student records.</h1>
+        <p class="dashboard-lede">Review and update student profiles from your staff workspace.</p>
+        <div class="staff-action-links">
+            <a class="panel-link staff-action-link" href="{{ url_for('marks_entry') }}">Enter theory and lab marks <span>→</span></a>
+            <a class="panel-link staff-action-link" href="{{ url_for('manage_timetable') }}">Edit timetables <span>→</span></a>
+            <a class="panel-link staff-action-link" href="{{ url_for('manage_fees') }}">Manage fee payments <span>→</span></a>
+            <a class="panel-link staff-action-link" href="{{ url_for('course_data') }}">View course data <span>→</span></a>
+            {% if user.role == 'admin' %}<a class="panel-link staff-action-link" href="{{ url_for('account_history') }}">Account history <span>→</span></a>{% endif %}
+        </div>
+
+        <section class="panel student-table-panel">
+            <div class="panel-heading">
+                <div><p class="eyebrow">Registered learners</p><h2>Search student details</h2></div>
+                <span class="term-chip">{{ students|length }} students</span>
+            </div>
+            <form class="student-search-form records-search-form" method="get">
+                <label for="student-search">Search by name or UUCMS ID</label>
+                <div>
+                    <input id="student-search" name="search" type="search" value="{{ search }}" placeholder="Student name or UUCMS ID">
+                    <input type="hidden" name="month" value="{{ month }}">
+                    <select name="department" aria-label="Filter students by department">
+                        <option value="">All departments</option>
+                        {% for department in departments %}<option value="{{ department }}" {% if selected_department == department %}selected{% endif %}>{{ department }}</option>{% endfor %}
+                    </select>
+                    <button class="save-button" type="submit">Search</button>
+                    {% if search or selected_department %}<a class="clear-search" href="{{ url_for('manage_students', month=month) }}">Clear</a>{% endif %}
+                </div>
+            </form>
+            {% if students %}
+            <div class="selected-student-info" id="selected-student-info" hidden aria-live="polite">
+                <div class="panel-heading"><div><p class="eyebrow">Selected student</p><h2 id="selected-student-name">Student details</h2></div><span class="term-chip">Profile</span></div>
+                <div class="student-detail-grid">
+                    <div><span>UUCMS ID</span><strong id="selected-student-id">—</strong></div>
+                    <div><span>Class</span><strong id="selected-student-class">—</strong></div>
+                    <div><span>Section</span><strong id="selected-student-section">—</strong></div>
+                </div>
+            </div>
+            {% endif %}
+            {% if students %}
+            <div class="student-table-wrap">
+                <table class="student-table">
+                    <thead><tr><th>Select</th><th>UUCMS ID</th><th>Student name</th><th>Registered</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr class="student-row" tabindex="0" data-name="{{ student.full_name }}" data-uucms-id="{{ student.uucms_id }}" data-class="{{ student.class_name or 'Not provided' }}" data-section="{{ student.section or 'Not provided' }}">
+                            <td><input class="student-selector" type="radio" name="selected_student" value="{{ student.id }}" aria-label="Select {{ student.full_name }}"></td>
+                            <td><strong>{{ student.uucms_id }}</strong></td>
+                            <td>
+                                <form id="edit-{{ student.id }}" class="student-edit-form" method="post">
+                                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                                    <input name="full_name" type="text" value="{{ student.full_name }}" aria-label="Student name for {{ student.uucms_id }}" required>
+                                </form>
+                            </td>
+                            <td>{{ student.created_at[:10] }}</td>
+                            <td><button class="save-button" form="edit-{{ student.id }}" type="submit">Save</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state"><strong>No student accounts yet.</strong><span>New student registrations will appear here.</span></div>
+            {% endif %}
+        </section>
+
+        <section class="panel attendance-entry-panel">
+            <div class="panel-heading">
+                <div><p class="eyebrow">Teacher entry</p><h2>Record monthly attendance</h2></div>
+                <form class="month-picker" method="get">
+                    <label for="staff-attendance-month">Month</label>
+                    <input id="staff-attendance-month" name="month" type="month" value="{{ month }}">
+                    <button class="save-button" type="submit">View</button>
+                </form>
+            </div>
+            <p class="editor-note">Enter one subject at a time. The student will see the percentage and a warning when it is below 75%.</p>
+            {% if students %}
+            <div class="attendance-entry-list">
+                {% for student in students %}
+                <div class="attendance-entry-row">
+                    <div><strong>{{ student.full_name }}</strong><small>{{ student.uucms_id }}</small></div>
+                    <form method="post" class="attendance-entry-form">
+                        <input type="hidden" name="action" value="save_attendance">
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="hidden" name="month" value="{{ month }}">
+                        <select name="attendance_type" required>
+                            <option value="class">Class attendance</option>
+                            <option value="lab">Lab attendance</option>
+                        </select>
+                        <select name="subject" class="attendance-subject-select" required>
+                            <option value="" disabled selected>Choose subject</option>
+                            <optgroup label="Class subjects">
+                                {% for subject in attendance_subjects[student.id].classes %}<option data-attendance-type="class" value="{{ subject }}">{{ subject }}</option>{% endfor %}
+                            </optgroup>
+                            <optgroup label="Lab subjects">
+                                {% for subject in attendance_subjects[student.id].labs %}<option data-attendance-type="lab" value="{{ subject }}">{{ subject }}</option>{% endfor %}
+                            </optgroup>
+                        </select>
+                        <input name="total_classes" type="number" min="1" placeholder="Total classes" required>
+                        <input name="attended_classes" type="number" min="0" placeholder="Attended" required>
+                        <button class="save-button" type="submit">Save</button>
+                    </form>
+                    {% if attendance_by_student.get(student.id) %}
+                    <div class="saved-attendance-list">
+                        {% for record in attendance_by_student[student.id] %}
+                        <span>{{ record.subject }}: {{ record.attended_classes }}/{{ record.total_classes }} ({{ (record.attended_classes / record.total_classes * 100)|round|int }}%)</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state"><strong>No student accounts yet.</strong><span>Attendance entry will appear after students register.</span></div>
+            {% endif %}
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+            {% endif %}
+        {% endwith %}
+
+    </main>
+    <script>
+        const studentInfo = document.getElementById('selected-student-info');
+        const studentRows = document.querySelectorAll('.student-row');
+        function showStudentDetails(row) {
+            if (!studentInfo) return;
+            studentRows.forEach((item) => item.classList.remove('selected-student-row'));
+            row.classList.add('selected-student-row');
+            document.getElementById('selected-student-name').textContent = row.dataset.name;
+            document.getElementById('selected-student-id').textContent = row.dataset.uucmsId;
+            document.getElementById('selected-student-class').textContent = row.dataset.class;
+            document.getElementById('selected-student-section').textContent = row.dataset.section;
+            studentInfo.hidden = false;
+        }
+        studentRows.forEach((row) => {
+            row.addEventListener('click', (event) => {
+                if (event.target.closest('button, input, a, form')) return;
+                row.querySelector('.student-selector').checked = true;
+                showStudentDetails(row);
+            });
+            row.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    row.querySelector('.student-selector').checked = true;
+                    showStudentDetails(row);
+                }
+            });
+            row.querySelector('.student-selector').addEventListener('change', () => showStudentDetails(row));
+        });
+
+        document.querySelectorAll('.attendance-entry-form').forEach((form) => {
+            const type = form.querySelector('[name="attendance_type"]');
+            const subject = form.querySelector('.attendance-subject-select');
+            const subjectOptions = [...subject.querySelectorAll('option[data-attendance-type]')].map((option) => ({
+                type: option.dataset.attendanceType,
+                value: option.value,
+                label: option.textContent,
+            }));
+            const updateSubjects = () => {
+                subject.replaceChildren();
+                const placeholder = new Option('Choose subject', '');
+                placeholder.disabled = true;
+                placeholder.selected = true;
+                subject.append(placeholder);
+                const group = document.createElement('optgroup');
+                group.label = type.value === 'lab' ? 'Lab subjects' : 'Class subjects';
+                subjectOptions
+                    .filter((option) => option.type === type.value)
+                    .forEach((option) => group.append(new Option(option.label, option.value)));
+                subject.append(group);
+            };
+            type.addEventListener('change', updateSubjects);
+            updateSubjects();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'Create account' if mode == 'register' else 'Sign in' }} | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="auth-shell">
+        <section class="brand-panel {% if mode == 'register' %}register-brand-panel{% endif %}">
+            {% include "_campuscore_logo.html" %}
+            <div class="brand-copy">
+                {% if mode == 'register' %}
+                <p class="eyebrow">Your next chapter / 2026</p>
+                <h1>Start with the courage to begin.</h1>
+                <p class="vivekananda-thought">“Arise, awake, and do not stop until the goal is reached.”</p>
+                <cite>Swami Vivekananda</cite>
+                {% else %}
+                <p class="eyebrow">CampusCore / 2026</p>
+                <h1>One place for your campus day.</h1>
+                <p>Connect with the people, records, and routines that keep your institution moving.</p>
+                {% endif %}
+            </div>
+            <div class="brand-footer"><span class="status-dot"></span> {{ 'Build your campus story' if mode == 'register' else 'Secure campus access' }}</div>
+        </section>
+
+        <section class="form-panel">
+            <div class="form-wrap">
+                <div class="mobile-brand">Campus<span>Core</span></div>
+                <div class="form-heading">
+                    <p class="eyebrow">{{ 'New member' if mode == 'register' else 'Welcome back' }}</p>
+                    <h2>{{ 'Create your campus ID' if mode == 'register' else 'Sign in to CampusCore' }}</h2>
+                    <p>{{ 'Set up your access in less than a minute.' if mode == 'register' else 'Use your UUCMS ID to access your module.' }}</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="post" class="auth-form">
+                    {% if mode == 'register' %}
+                    <div class="module-picker module-checking">
+                        <label>Choose module</label>
+                        <div class="role-grid">
+                            {% for role in ['student', 'teacher'] %}
+                            <label class="role-option">
+                                <input type="radio" name="role" value="{{ role }}" {% if form.get('role', 'student') == role %}checked{% endif %}>
+                                <span>{{ role|capitalize }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <p class="module-status" aria-live="polite"></p>
+                    </div>
+
+                    <label for="full_name">Full name</label>
+                    <input id="full_name" name="full_name" type="text" placeholder="Your full name" value="{{ form.get('full_name', '') }}" autocomplete="name" required>
+                    <div class="student-only-field">
+                    <label for="class_name">Class</label>
+                    <input id="class_name" name="class_name" type="text" placeholder="e.g. B.Sc. Computer Science" value="{{ form.get('class_name', '') }}" required>
+                    <label for="year">Year</label>
+                    <input id="year" name="year" type="text" placeholder="e.g. 2nd Year" value="{{ form.get('year', '') }}" required>
+                    </div>
+                    <label for="department">Department</label>
+                    <select id="department" name="department" required>
+                        <option value="" disabled {% if not form.get('department') %}selected{% endif %}>Select department</option>
+                        {% for department in departments %}
+                        <option value="{{ department }}" {% if form.get('department') == department %}selected{% endif %}>{{ department }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="student-only-field">
+                    <label for="section">Section</label>
+                    <input id="section" name="section" type="text" placeholder="e.g. A" value="{{ form.get('section', '') }}" required>
+                    </div>
+                    <label for="email">Email address</label>
+                    <input id="email" name="email" type="email" placeholder="you@example.com" value="{{ form.get('email', '') }}" autocomplete="email" required>
+                    <div class="student-only-field">
+                    <label for="guardian_name">Parent or guardian name</label>
+                    <input id="guardian_name" name="guardian_name" type="text" placeholder="Parent or guardian full name" value="{{ form.get('guardian_name', '') }}" required>
+                    <label for="guardian_number">Parent or guardian number</label>
+                    <input id="guardian_number" name="guardian_number" type="tel" placeholder="Parent or guardian phone number" value="{{ form.get('guardian_number', '') }}" required>
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" required>
+                        <option value="" disabled {% if not form.get('gender') %}selected{% endif %}>Select gender</option>
+                        {% for gender in ['Female', 'Male', 'Non-binary', 'Prefer not to say'] %}
+                        <option value="{{ gender }}" {% if form.get('gender') == gender %}selected{% endif %}>{{ gender }}</option>
+                        {% endfor %}
+                    </select>
+                    </div>
+                    {% endif %}
+
+                    <label for="uucms_id">UUCMS ID</label>
+                    <input id="uucms_id" name="uucms_id" type="text" placeholder="e.g. UUCMS2026001" value="{{ form.get('uucms_id', '') }}" autocomplete="username" required>
+
+                    {% if mode == 'login' %}<label>Choose module</label><div class="role-grid">
+                        {% for role in (['student', 'teacher'] if mode == 'register' else ['student', 'teacher', 'admin']) %}
+                        <label class="role-option">
+                            <input type="radio" name="role" value="{{ role }}" {% if form.get('role', 'student') == role %}checked{% endif %}>
+                            <span>{{ role|capitalize }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>{% endif %}
+
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" placeholder="At least 6 characters" autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}" required>
+
+                    <button type="submit" class="submit-button">{{ 'Create my account' if mode == 'register' else 'Continue to dashboard' }} <span>→</span></button>
+                </form>
+
+                {% if mode == 'register' %}
+                <p class="switch-copy">Already have an account? <a href="{{ url_for('login') }}">Sign in</a></p>
+                {% else %}
+                <p class="switch-copy" id="create-account-link">New to CampusCore? <a href="{{ url_for('register') }}">Create a new ID</a></p>
+                <p class="switch-copy"><a href="{{ url_for('forgot_password') }}">Forgot password?</a></p>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+    {% if mode == 'register' %}
+    <script>
+        const registerForm = document.querySelector('.auth-form');
+        const registerRoleInputs = document.querySelectorAll('input[name="role"]');
+        const studentOnlyFields = document.querySelectorAll('.student-only-field');
+        const moduleStatus = document.querySelector('.module-status');
+        function updateRegisterModule() {
+            const selectedRole = document.querySelector('input[name="role"]:checked').value;
+            const isStudent = selectedRole === 'student';
+            studentOnlyFields.forEach((field) => {
+                field.hidden = !isStudent;
+                field.querySelectorAll('input, select').forEach((input) => {
+                    input.required = isStudent;
+                });
+            });
+            moduleStatus.textContent = isStudent ? 'Student profile selected' : 'Teacher approval profile selected';
+            moduleStatus.classList.remove('module-status-change');
+            void moduleStatus.offsetWidth;
+            moduleStatus.classList.add('module-status-change');
+            registerForm.classList.remove('module-form-change');
+            void registerForm.offsetWidth;
+            registerForm.classList.add('module-form-change');
+        }
+        registerRoleInputs.forEach((input) => input.addEventListener('change', updateRegisterModule));
+        updateRegisterModule();
+    </script>
+    {% endif %}
+    {% if mode == 'login' %}
+    <script>
+        const roleInputs = document.querySelectorAll('input[name="role"]');
+        const createAccountLink = document.getElementById('create-account-link');
+        function updateCreateAccountLink() {
+            const selectedRole = document.querySelector('input[name="role"]:checked').value;
+            createAccountLink.hidden = selectedRole === 'admin';
+        }
+        roleInputs.forEach((input) => input.addEventListener('change', updateCreateAccountLink));
+        updateCreateAccountLink();
+    </script>
+    {% endif %}
+</body>
+</html>

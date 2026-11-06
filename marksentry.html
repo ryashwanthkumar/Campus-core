@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Marks entry | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <nav class="staff-page-nav" aria-label="Staff pages">
+            <a href="{{ url_for('manage_students') }}">Student records</a>
+            <a class="active" href="{{ url_for('marks_entry') }}">Marks entry</a>
+            <a href="{{ url_for('manage_timetable') }}">Timetables</a>
+            <a href="{{ url_for('manage_fees') }}">Fees</a>
+        </nav>
+        <div class="staff-badge"><span>{{ user.role|capitalize }} workspace</span><strong>{{ user.uucms_id }}</strong></div>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content staff-content marks-entry-page">
+        <p class="eyebrow">{{ user.role|capitalize }} entry</p>
+        <h1>Marks entry.</h1>
+        <p class="dashboard-lede">{% if is_admin %}Choose an academic year and semester, then record marks for a student.{% else %}Search a student, then record marks for the current semester's department subjects.{% endif %}</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section class="panel marks-search-panel">
+            <form class="student-search-form" method="get">
+                <label for="marks-student-search">Search student</label>
+                <div>
+                    {% if is_admin %}
+                    <select name="year" aria-label="Academic year" onchange="this.form.submit()">
+                        {% for year in years %}<option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>{% endfor %}
+                    </select>
+                    <select name="semester" aria-label="Semester">
+                        {% for semester in semester_options %}<option value="{{ semester }}" {% if semester == selected_semester %}selected{% endif %}>{{ semester }}</option>{% endfor %}
+                    </select>
+                    {% endif %}
+                    <input id="marks-student-search" name="search" type="search" value="{{ search }}" placeholder="Student name or UUCMS ID">
+                    <button class="save-button" type="submit">Search</button>
+                    {% if search %}<a class="clear-search" href="{{ url_for('marks_entry', year=selected_year, semester=selected_semester) if is_admin else url_for('marks_entry') }}">Clear</a>{% endif %}
+                </div>
+            </form>
+        </section>
+
+        {% if students %}
+        <section class="marks-student-list">
+            {% for student in students %}
+            <article class="panel marks-student-card">
+                <div class="panel-heading">
+                    <div><p class="eyebrow">{{ student.department }} · {{ student_semesters[student.id] }}</p><h2>{{ student.full_name }}</h2><small class="student-meta">{{ student.uucms_id }}{% if student.year %} · {{ student.year }}{% endif %}</small></div>
+                    <span class="term-chip">{{ student_semesters[student.id] }}</span>
+                </div>
+                <div class="marks-entry-columns">
+                    <section class="marks-entry-section theory-section">
+                        <div class="marks-section-heading"><h3>Theory marks</h3><span>Internal / 20 + Final / 80</span></div>
+                        <form method="post" class="dedicated-marks-form">
+                            <input type="hidden" name="action" value="save_marks">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <input type="hidden" name="search" value="{{ search }}">
+                            {% if is_admin %}<input type="hidden" name="year" value="{{ selected_year }}"><input type="hidden" name="semester" value="{{ selected_semester }}">{% endif %}
+                            <select name="subject" required>
+                                <option value="" disabled selected>Choose theory subject</option>
+                                {% for subject in theory_mark_subjects_by_student.get(student.id, []) %}<option value="{{ subject }}">{{ subject }}</option>{% endfor %}
+                            </select>
+                            {% if theory_mark_subjects_by_student.get(student.id) %}
+                            <input name="internal_marks" type="number" min="0" max="20" step="0.5" placeholder="Internal / 20" required>
+                            <input name="final_marks" type="number" min="0" max="80" step="0.5" placeholder="Final / 80" required>
+                            <input name="last_year_cgpa" type="number" min="0" max="10" step="0.01" placeholder="Last year CGPA" required>
+                            <button class="save-button" type="submit">Save theory</button>
+                            {% else %}<p class="editor-note">No theory subjects are configured for this semester.</p>{% endif %}
+                        </form>
+                        <div class="saved-dedicated-marks">
+                            {% for mark in theory_marks_by_student.get(student.id, []) %}<span>{{ mark.subject }}: {{ (mark.internal_marks + mark.final_marks)|round|int }}/100</span>{% else %}<small>No theory marks entered yet.</small>{% endfor %}
+                        </div>
+                    </section>
+                    <section class="marks-entry-section lab-section">
+                        <div class="marks-section-heading"><h3>Lab marks</h3><span>Lab score / 20</span></div>
+                        <form method="post" class="dedicated-marks-form">
+                            <input type="hidden" name="action" value="save_marks">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <input type="hidden" name="search" value="{{ search }}">
+                            {% if is_admin %}<input type="hidden" name="year" value="{{ selected_year }}"><input type="hidden" name="semester" value="{{ selected_semester }}">{% endif %}
+                            <select name="subject" required>
+                                <option value="" disabled selected>Choose lab subject</option>
+                                {% for subject in lab_mark_subjects_by_student.get(student.id, []) %}<option value="{{ subject }}">{{ subject }}</option>{% endfor %}
+                            </select>
+                            {% if lab_mark_subjects_by_student.get(student.id) %}
+                            <input name="lab_marks" type="number" min="0" max="20" step="0.5" placeholder="Lab / 20" required>
+                            <input name="last_year_cgpa" type="number" min="0" max="10" step="0.01" placeholder="Last year CGPA" required>
+                            <button class="save-button" type="submit">Save lab</button>
+                            {% else %}<p class="editor-note">No lab subjects are configured for this course.</p>{% endif %}
+                        </form>
+                        <div class="saved-dedicated-marks">
+                            {% for mark in lab_marks_by_student.get(student.id, []) %}<span>{{ mark.subject }}: {{ mark.internal_marks|round|int }}/20</span>{% else %}<small>No lab marks entered yet.</small>{% endfor %}
+                        </div>
+                    </section>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+        {% else %}
+        <section class="panel empty-state"><strong>{% if search %}No student found.{% else %}No student accounts yet.{% endif %}</strong><span>{% if search %}Try a different name or UUCMS ID.{% else %}Registered students will appear here for marks entry.{% endif %}</span></section>
+        {% endif %}
+    </main>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mailbox | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page mailbox-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <div class="staff-badge"><span>Admin workspace</span><strong>{{ user.uucms_id }}</strong></div>
+        <a class="mailbox-link mailbox-link-active" href="{{ url_for('mailbox') }}" aria-label="Mailbox">✉{% if pending_teachers %}<b>{{ pending_teachers|length }}</b>{% endif %}</a>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content staff-content mailbox-content">
+        <p class="eyebrow">Admin inbox</p>
+        <h1>Mailbox.</h1>
+        <p class="dashboard-lede">Review account requests and keep your staff workspace moving.</p>
+
+        <section class="panel request-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Teacher requests</p><h2>Waiting for review</h2></div><span class="term-chip">{{ pending_teachers|length }} pending</span></div>
+            {% if pending_teachers %}
+            <div class="teacher-request-list">
+                {% for teacher in pending_teachers %}
+                <article class="teacher-request">
+                    <div class="teacher-request-heading"><div><strong>{{ teacher.full_name }}</strong><small>{{ teacher.uucms_id }} · Submitted {{ teacher.created_at[:16] }}</small></div><span class="pending-label">Waiting for review</span></div>
+                    <div class="teacher-request-details">
+                        <span><b>Class / year</b>{{ teacher.class_name }} / {{ teacher.year }}</span>
+                        <span><b>Department / section</b>{{ teacher.department }} / {{ teacher.section }}</span>
+                        <span><b>Email</b>{{ teacher.email }}</span>
+                        <span><b>Phone</b>{{ teacher.phone_number or 'Not provided' }}</span>
+                        <span><b>Guardian</b>{{ teacher.guardian_name }} · {{ teacher.guardian_number }}</span>
+                        <span><b>Gender</b>{{ teacher.gender }}</span>
+                    </div>
+                    <div class="teacher-request-actions">
+                        <form method="post"><input type="hidden" name="action" value="reject_teacher"><input type="hidden" name="teacher_id" value="{{ teacher.id }}"><button class="request-button reject-button" type="submit">Reject</button></form>
+                        <form method="post"><input type="hidden" name="action" value="approve_teacher"><input type="hidden" name="teacher_id" value="{{ teacher.id }}"><button class="request-button approve-button" type="submit">Accept</button></form>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}<div class="empty-state"><strong>No teacher requests.</strong><span>New teacher registrations will appear here.</span></div>{% endif %}
+        </section>
+        <p class="switch-copy"><a href="{{ url_for('manage_students') }}">Back to student records</a></p>
+    </main>
+</body>
+</html>

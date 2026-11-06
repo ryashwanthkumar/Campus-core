@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Course data | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <nav class="dashboard-nav" aria-label="Course data navigation">
+            <a href="{{ url_for('dashboard') if user.role == 'student' else url_for('manage_students') }}">Home</a>
+            <a class="active" href="{{ url_for('course_data') }}">Course data</a>
+        </nav>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content course-data-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="dashboard-flashes">
+            {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        <p class="eyebrow">Academic reference</p>
+        <h1>Course data.</h1>
+        <p class="dashboard-lede">Browse the subjects and credit values published for each program semester.</p>
+
+        <nav class="course-program-tabs" aria-label="Programs">
+            {% for code in programs %}
+            <a class="{% if program == code %}active{% endif %}" href="{{ url_for('course_data', program=code) }}">{{ code }}</a>
+            {% endfor %}
+        </nav>
+
+        <nav class="semester-tabs course-semester-tabs" aria-label="{{ program }} semesters">
+            {% for semester_name in catalog.semesters %}
+            <a class="{% if semester == semester_name %}active{% endif %}" href="{{ url_for('course_data', program=program, semester=semester_name) }}">{{ semester_name }}</a>
+            {% endfor %}
+        </nav>
+
+        <section class="panel course-data-panel">
+            <div class="panel-heading">
+                <div><p class="eyebrow">{{ program }} curriculum</p><h2>{{ semester }}</h2></div>
+                {% if semester_data.provisional %}<span class="term-chip">Provisional · {{ semester_data.credits }} estimated credits</span>{% elif semester_data %}<span class="term-chip">{{ semester_data.credits }} credits</span>{% else %}<span class="term-chip">Awaiting source</span>{% endif %}
+            </div>
+            {% if semester_data %}
+            {% if semester_data.provisional %}
+            <div class="course-unavailable-note course-provisional-note">
+                <strong>Provisional curriculum — not verified by BCU</strong>
+                <p>These subjects and credit values are estimates for planning. Confirm or replace them with the official BCU syllabus when it is available.</p>
+            </div>
+            {% endif %}
+            <div class="course-table-wrap">
+                <table class="course-table">
+                    <thead><tr><th>Subject</th><th>Credits</th></tr></thead>
+                    <tbody>
+                        {% for subject, credits in semester_data.courses %}
+                        <tr><td>{{ subject }}</td><td>{{ credits }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot><tr><th>{% if semester_data.provisional %}Estimated semester credit total{% else %}Semester credit total{% endif %}</th><th>{{ semester_data.credits }}</th></tr></tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="course-unavailable-note">
+                <strong>Official semester details are not yet available here.</strong>
+                <p>{{ catalog.note }}</p>
+            </div>
+            {% endif %}
+            {% if catalog.note and semester_data %}
+            <p class="course-catalog-note">{{ catalog.note }}</p>
+            {% endif %}
+            <p class="course-source">
+                {% if semester_data.provisional %}Official reference (Semesters I–II only):{% else %}Source:{% endif %}
+                {{ catalog.source_label }} · <a href="{{ catalog.source_url }}" target="_blank" rel="noopener noreferrer">Open official syllabus PDF ↗</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>

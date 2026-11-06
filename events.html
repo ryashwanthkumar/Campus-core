@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Events | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page events-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <nav class="dashboard-nav" aria-label="Dashboard sections">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('attendance') }}">Attendance</a>
+            <a href="{{ url_for('fees') }}">Fees</a>
+            <a class="active" href="{{ url_for('events') }}">Events</a>
+        </nav>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content events-content">
+        <div class="events-intro">
+            <div>
+                <p class="eyebrow">Campus calendar</p>
+                <h1>Find your next thing.</h1>
+                <p class="dashboard-lede">Keep up with the talks, showcases, and shared moments happening around campus.</p>
+            </div>
+            <div class="events-mark" aria-hidden="true"><span>03</span><small>events<br>to explore</small></div>
+        </div>
+
+        <section class="events-grid" aria-label="Upcoming events">
+            {% for event in events %}
+            <article class="event-card" style="--event-delay: {{ loop.index0 * 90 }}ms">
+                <a class="event-image-link" href="{{ event.link }}" target="_blank" rel="noopener noreferrer" aria-label="Open {{ event.title }} details">
+                    <img src="{{ event.image }}" alt="{{ event.title }} event photo" loading="lazy">
+                    <span class="event-date">{{ event.date }}</span>
+                </a>
+                <div class="event-card-body">
+                    <p class="event-category">{{ event.category }}</p>
+                    <h2>{{ event.title }}</h2>
+                    <p>{{ event.description }}</p>
+                    <a class="event-link" href="{{ event.link }}" target="_blank" rel="noopener noreferrer">{{ event.link_label }} <span>↗</span></a>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Results | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        <details class="quick-menu">
+            <summary aria-label="Open quick actions"><span></span><span></span><span></span></summary>
+            <div class="quick-menu-panel">
+                <p class="eyebrow">Quick actions</p>
+                <a href="{{ url_for('dashboard') }}">Overview</a>
+                <a href="{{ url_for('results') }}">Results</a>
+                <a href="{{ url_for('attendance') }}">Attendance</a>
+                <a href="{{ url_for('fees') }}">Fees &amp; payments</a>
+                <a href="{{ url_for('events') }}">Events</a>
+            </div>
+        </details>
+        {% include "_campuscore_logo.html" %}
+        <nav class="dashboard-nav" aria-label="Dashboard sections">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a class="active" href="{{ url_for('results') }}">Results</a>
+            <a href="{{ url_for('attendance') }}">Attendance</a>
+            <a href="{{ url_for('fees') }}">Fees</a>
+            <a href="{{ url_for('events') }}">Events</a>
+        </nav>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content results-content">
+        <div class="welcome-row">
+            <div>
+                <p class="eyebrow">Academic record</p>
+                <h1>Download your result.</h1>
+                <p class="dashboard-lede">Choose a semester and year, search for a subject, then download the filtered result.</p>
+            </div>
+            <div class="student-id"><span>UUCMS ID</span><strong>{{ user.uucms_id }}</strong></div>
+        </div>
+
+        <section class="panel results-panel">
+            <form class="results-filter-form" method="get" action="{{ url_for('results') }}">
+                <div><label for="result-semester">Semester</label><select id="result-semester" name="semester">{% for semester in semesters %}<option value="{{ semester }}" {% if semester == selected_semester %}selected{% endif %}>{{ semester }}</option>{% endfor %}</select></div>
+                <div><label for="result-year">Year</label><select id="result-year" name="year">{% for year in years %}<option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+                <div><label for="result-search">Search subject</label><input id="result-search" name="search" type="search" value="{{ search }}" placeholder="Subject name"></div>
+                <button class="save-button" type="submit">Search results</button>
+            </form>
+        </section>
+
+        <section class="panel results-panel">
+            <div class="panel-heading"><div><p class="eyebrow">{{ selected_semester }} · {{ selected_year }}</p><h2>{{ records|length }} result{% if records|length != 1 %}s{% endif %}</h2></div><div class="result-downloads"><a class="save-button result-download" href="{{ url_for('download_results_pdf', semester=selected_semester, year=selected_year, search=search) }}">Download PDF</a><a class="save-button result-download" href="{{ url_for('download_results', semester=selected_semester, year=selected_year, search=search) }}">Download CSV</a></div></div>
+            {% if records %}
+            <div class="results-table-wrap"><table class="results-table"><thead><tr><th>Subject</th><th>Internal</th><th>Final</th><th>Total</th><th>CGPA</th></tr></thead><tbody>{% for record in records %}<tr><th>{{ record.subject }}</th><td>{{ record.internal_marks|round|int }}</td><td>{{ record.final_marks|round|int }}</td><td><strong>{{ (record.internal_marks + record.final_marks)|round|int }}</strong></td><td>{{ '%.2f'|format(record.last_year_cgpa) }}</td></tr>{% endfor %}</tbody></table></div>
+            {% else %}
+            <div class="empty-state"><strong>No results found.</strong><span>Try another semester, year, or subject search.</span></div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

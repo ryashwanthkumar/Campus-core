@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Account history | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <div class="staff-badge"><span>Admin workspace</span><strong>{{ user.uucms_id }}</strong></div>
+        <a class="mailbox-link" href="{{ url_for('mailbox') }}" aria-label="Open mailbox">✉</a>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content staff-content">
+        <p class="eyebrow">Admin audit</p>
+        <h1>Account history.</h1>
+        <p class="dashboard-lede">Review account creation, sign-ins, approvals, rejections, and deletions.</p>
+
+        <section class="history-summary" aria-label="Account history totals">
+            {% for action in ['created', 'login', 'approved', 'rejected', 'deleted'] %}<div class="history-count"><span>{{ action }}</span><strong>{{ counts.get(action, 0) }}</strong></div>{% endfor %}
+        </section>
+
+        <section class="panel request-panel">
+            <form class="history-filter-form" method="get">
+                <div><label for="history-search">Search accounts</label><input id="history-search" name="search" type="search" value="{{ search }}" placeholder="Name, UUCMS ID, or email"></div>
+                <div><label for="history-action">Action</label><select id="history-action" name="action"><option value="">All actions</option>{% for option in ['created', 'login', 'approved', 'rejected', 'deleted'] %}<option value="{{ option }}" {% if selected_action == option %}selected{% endif %}>{{ option|capitalize }}</option>{% endfor %}</select></div>
+                <button class="save-button" type="submit">Filter history</button>
+            </form>
+        </section>
+
+        <section class="panel student-table-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Audit records</p><h2>{{ history|length }} matching events</h2></div></div>
+            {% if history %}
+            <div class="history-table-wrap"><table class="history-table"><thead><tr><th>Time</th><th>Action</th><th>Account</th><th>UUCMS ID</th><th>Role</th><th>Email</th><th>Academic profile</th><th>Contact profile</th></tr></thead><tbody>{% for event in history %}<tr><td>{{ event.occurred_at }}</td><td><span class="history-action">{{ event.action }}</span></td><td><strong>{{ event.full_name }}</strong></td><td>{{ event.uucms_id }}</td><td>{{ event.role|capitalize }}</td><td>{{ event.email or 'Not provided' }}</td><td>{{ event.class_name or '—' }} / {{ event.year or '—' }}<br>{{ event.department or '—' }} / {{ event.section or '—' }}</td><td>{{ event.phone_number or '—' }}<br>{{ event.guardian_name or '—' }} · {{ event.guardian_number or '—' }}<br>{{ event.gender or '—' }}</td></tr>{% endfor %}</tbody></table></div>
+            {% else %}<div class="empty-state"><strong>No account history found.</strong><span>New account activity will appear here automatically.</span></div>{% endif %}
+        </section>
+        <p class="switch-copy"><a href="{{ url_for('manage_students') }}">Back to student records</a></p>
+    </main>
+</body>
+</html>

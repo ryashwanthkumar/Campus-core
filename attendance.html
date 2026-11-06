@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Attendance | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <nav class="dashboard-nav" aria-label="Dashboard sections">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a class="active" href="{{ url_for('attendance') }}">Attendance</a>
+            <a href="{{ url_for('fees') }}">Fees</a>
+            <a href="{{ url_for('events') }}">Events</a>
+        </nav>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content attendance-content">
+        <div class="welcome-row">
+            <div>
+                <p class="eyebrow">Monthly record</p>
+                <h1>Subject attendance.</h1>
+                <p class="dashboard-lede">{{ user.full_name }}'s attendance for {{ month }}. Keep every subject at 75% or above.</p>
+            </div>
+            <div class="student-id"><span>UUCMS ID</span><strong>{{ user.uucms_id }}</strong></div>
+        </div>
+
+        <section class="panel attendance-panel">
+            <div class="panel-heading">
+                <div><p class="eyebrow">{{ records|length }} subjects</p><h2>Monthly percentages</h2></div>
+                <form class="month-picker" method="get">
+                    <label for="attendance-month">Month</label>
+                    <input id="attendance-month" name="month" type="month" value="{{ month }}">
+                    <button class="save-button" type="submit">View</button>
+                </form>
+            </div>
+            {% macro attendance_list(title, items) %}
+            <div class="attendance-group">
+                <h3>{{ title }}</h3>
+                {% if items %}
+                <div class="detailed-attendance-list">
+                    {% for record in items %}
+                    <article class="attendance-record {% if record.is_low %}attendance-low{% endif %}">
+                        <div class="attendance-record-heading">
+                            <div><strong>{{ record.subject }}</strong><small>{{ record.attended_classes }} of {{ record.total_classes }} classes attended</small></div>
+                            <strong class="attendance-percent">{{ record.percentage }}%</strong>
+                        </div>
+                        <div class="attendance-bar"><b class="attendance-progress" data-width="{{ [record.percentage, 100]|min }}"></b></div>
+                        {% if record.is_low %}<span class="attendance-warning">Below 75%</span>{% endif %}
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="attendance-empty-note">No {{ title|lower }} entered yet.</p>
+                {% endif %}
+            </div>
+            {% endmacro %}
+            {{ attendance_list("Class attendance", class_records) }}
+            {{ attendance_list("Lab attendance", lab_records) }}
+            {% if not records %}
+            <div class="empty-state"><strong>Attendance has not been entered by teachers yet.</strong><span>Check another month or return after your teachers record the classes.</span></div>
+            {% endif %}
+        </section>
+    </main>
+    <script>
+        document.querySelectorAll('.attendance-progress').forEach((bar) => {
+            bar.style.width = `${bar.dataset.width}%`;
+        });
+    </script>
+</body>
+</html>

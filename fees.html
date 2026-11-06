@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fees &amp; payments | CampusCore</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-page">
+    <header class="topbar">
+        {% include "_campuscore_logo.html" %}
+        <nav class="dashboard-nav" aria-label="Student pages">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('attendance') }}">Attendance</a>
+            <a class="active" href="{{ url_for('fees') }}">Fees &amp; payments</a>
+            <a href="{{ url_for('events') }}">Events</a>
+        </nav>
+        <form method="post" action="{{ url_for('logout') }}"><button class="logout-button" type="submit">Sign out</button></form>
+    </header>
+    <main class="dashboard-content fees-content">
+        <div class="welcome-row">
+            <div>
+                <p class="eyebrow">Vivekananda Institute of Management</p>
+                <h1>Fees &amp; payments.</h1>
+                <p class="dashboard-lede">View the published full-program fee structure and your recorded payments.</p>
+            </div>
+            <div class="student-id"><span>UUCMS ID</span><strong>{{ user.uucms_id }}</strong></div>
+        </div>
+
+        <section class="panel fee-structure-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Whole-program fee</p><h2>Course fee structure</h2></div><span class="term-chip">INR</span></div>
+            <p class="editor-note">These total program amounts were provided for this project. Any additional charges are not included here.</p>
+            <div class="fee-structure-grid">
+                {% for department in departments %}
+                <article class="fee-structure-card {% if department == user.department %}fee-current-course{% endif %}">
+                    <span>{{ department }}{% if department == user.department %} · Your course{% endif %}</span>
+                    <strong>₹{{ '{:,}'.format(program_fees[department]) }}</strong>
+                    <small>Full program</small>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="fee-summary-grid" aria-label="Your fee balance">
+            <article class="summary-card"><span class="card-label">Total fee</span><strong>₹{{ '{:,}'.format(total_fee) }}</strong><small>{{ user.department }} · full program</small></article>
+            <article class="summary-card"><span class="card-label">Amount paid</span><strong>₹{{ '{:,}'.format(amount_paid) }}</strong><small>Payments recorded by staff</small></article>
+            <article class="summary-card {% if balance > 0 %}fee-balance-due{% else %}fee-balance-clear{% endif %}"><span class="card-label">Balance due</span><strong>₹{{ '{:,}'.format(balance) }}</strong><small>{% if balance == 0 %}Fully paid{% elif amount_paid == 0 %}Not yet paid{% else %}Partially paid{% endif %}</small></article>
+        </section>
+
+        <section class="panel fee-history-panel">
+            <div class="panel-heading"><div><p class="eyebrow">Payment history</p><h2>Recorded transactions</h2></div><span class="term-chip">{{ payments|length }} payment{% if payments|length != 1 %}s{% endif %}</span></div>
+            {% if payments %}
+            <div class="results-table-wrap"><table class="results-table">
+                <thead><tr><th>Date</th><th>Amount</th><th>Note</th><th>Recorded by</th></tr></thead>
+                <tbody>{% for payment in payments %}<tr><td>{{ payment.paid_at }}</td><td><strong>₹{{ '{:,}'.format(payment.amount) }}</strong></td><td>{{ payment.note or '—' }}</td><td>{{ payment.recorded_by }}</td></tr>{% endfor %}</tbody>
+            </table></div>
+            {% else %}
+            <div class="empty-state"><strong>No payments recorded yet.</strong><span>Contact the college office if you have already paid and this page has not been updated.</span></div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>
